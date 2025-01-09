@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Lot Size Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2><i>RTFT</i> Lot Size Calculator</h2>
+        <label><b>Asset Type</b></label>
+        <select id="assetType" onchange="updateQuoteCurrency()">
+            <option value="forex">Forex</option>
+            <option value="crypto">Crypto</option>
+            <option value="commodities">Commodities</option>
+            <option value="index">Index</option>
+            <option value="stocks">Stocks</option>
+        </select>
+        <label><b>Quote Currency</b></label>
+        <select id="quoteCurrency">
+            <!-- Updated dynamically -->
+        </select>
+        <label><b>Equity/Balance (USD)</b></label>
+        <input type="number" id="equity" placeholder="Equity/Balance (USD)" step="0.01">
+       <label><b>Choose Risk Type (% / $ ) </b></label>
+        <select id="riskType" onchange="updateRiskType()">
+            <option value="percentage">Risk in Percentage</option>
+            <option value="dollar">Risk in Dollar</option>
+        </select>
+        <label><b>Enter Risk Amount</b></label>
+        <input type="number" id="riskAmount" placeholder="Risk Amount (%)" step="0.01">
+        <label><b>Enter Entry Price</b></label>
+        <input type="number" id="entryPrice" placeholder="Entry Price" step="0.0001">
+         <label><b>Enter Stop Loss Price</b></label>
+        <input type="number" id="stopLossPrice" placeholder="Stop Loss Price" step="0.0001">
+        <button onclick="calculateLotSize()">Calculate Lot Size</button>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const contractSizes = {
+            forex: 100000,
+            crypto: 1,
+            commodities: { gold: 100, silver: 5000, platinum: 50 },
+            index: 1,
+            stocks: 1
+        };
+
+        const pipValues = {
+            forex: 0.0001,
+            crypto: 0.01,
+            commodities: 0.01,
+            index: 1,
+            stocks: 1
+        };
+
+        const quoteCurrencies = ["USD", "AUD", "CAD", "CHF", "GBP", "JPY", "EUR"];
+
+        function updateQuoteCurrency() {
+            const quoteCurrencySelect = document.getElementById("quoteCurrency");
+            quoteCurrencySelect.innerHTML = "";
+            quoteCurrencies.forEach(currency => {
+                const option = document.createElement("option");
+                option.value = currency;
+                option.textContent = currency;
+                quoteCurrencySelect.appendChild(option);
+            });
+        }
+
+        function updateRiskType() {
+            const riskType = document.getElementById("riskType").value;
+            const riskAmountInput = document.getElementById("riskAmount");
+            riskAmountInput.placeholder = riskType === "percentage" ? "Risk Percentage (%)" : "Risk Amount (USD)";
+        }
+
+        function calculateLotSize() {
+            const assetType = document.getElementById("assetType").value;
+            const quoteCurrency = document.getElementById("quoteCurrency").value;
+            const equity = parseFloat(document.getElementById("equity").value);
+            const riskType = document.getElementById("riskType").value;
+            const riskAmountInput = parseFloat(document.getElementById("riskAmount").value);
+            const entryPrice = parseFloat(document.getElementById("entryPrice").value);
+            const stopLossPrice = parseFloat(document.getElementById("stopLossPrice").value);
+
+            if (isNaN(equity) || isNaN(riskAmountInput) || isNaN(entryPrice) || isNaN(stopLossPrice)) {
+                document.getElementById("result").textContent = "Please fill all fields with valid values.";
+                return;
+            }
+
+            const stopLoss = Math.abs(entryPrice - stopLossPrice);
+            const pipValue = pipValues[assetType];
+            const contractSize = assetType === "commodities" 
+                ? contractSizes[assetType][quoteCurrency.toLowerCase()]
+                : contractSizes[assetType];
+
+            const riskAmount = riskType === "percentage" ? (equity * riskAmountInput) / 100 : riskAmountInput;
+            const lotSize = riskAmount / (stopLoss * contractSize * pipValue);
+
+            document.getElementById("result").innerHTML = `
+               // Asset Type: ${assetType}<br>
+                //Quote Currency: ${quoteCurrency}<br>
+               // Stop Loss: ${stopLoss.toFixed(4)}<br>
+                Lot Size: ${lotSize.toFixed(2)} lots <br>
+                Risk Amount: $${riskAmount.toFixed(2)}
+                
+            `;
+        }
+
+        // Initialize on load
+        window.onload = updateQuoteCurrency;
+    </script>
+</body>
+</html>
